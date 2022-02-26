@@ -1,20 +1,25 @@
 #!/bin/bash
 
 # ensure queryIDs in trec run files are only numbers!
-rm -rf fusion_output/ && tools/sweep_polyfuse.py --depth 1000 runs/*
+sed -i runs/* -e 's/^A\.//g'
 
-#QRELS=qrels.ntcir12-math-browsing-concrete.txt
-#for run in $(ls fusion_output); do
-#	echo $run
-#	trec_eval $QRELS -m bpref -l1 fusion_output/$run
-#	trec_eval $QRELS -m bpref -l3 fusion_output/$run
-#done
+# fuse!
+rm -rf fusion_output/ && python3 tools/sweep_polyfuse.py --depth 1000 runs/*
 
-QRELS=qrels.arqmath-2021-task1.txt
+PYA0=/store2/scratch/w32zhong/pya0
+QREL=qrels.arqmath-2021-task1-official.txt
+
+cp $PYA0/topics-and-qrels/$QREL .
+sed -i $QREL -e 's/^A\.//g'
+
+### Official evaluation, but costly ###
+#$PYA0/eval-arqmath2-task1/preprocess.sh ./fusion_output/*
+#$PYA0/eval-arqmath2-task1/eval.sh $QREL
+
 for run in $(ls fusion_output); do
-	echo $run
-	trec_eval $QRELS fusion_output/$run -J -m ndcg
-	trec_eval $QRELS fusion_output/$run -l2 -J -m map
-	trec_eval $QRELS fusion_output/$run -l2 -J -m P.10
-	trec_eval $QRELS fusion_output/$run -l2 -m bpref
+    echo $run ====================
+    trec_eval $QREL fusion_output/$run -J -m ndcg
+    trec_eval $QREL fusion_output/$run -l2 -J -m map
+    trec_eval $QREL fusion_output/$run -l2 -J -m P.10
+    trec_eval $QREL fusion_output/$run -l2 -m bpref
 done

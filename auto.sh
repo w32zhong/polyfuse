@@ -12,14 +12,11 @@ sed -i runs/* -e 's/^A\.//g' -e 's/^NTCIR12-MathWiki-//g'
 # fuse!
 rm -rf fusion_output/ && python3 tools/sweep_polyfuse.py --depth 1000 runs/*
 
+rm -f ./qrels.*
 cp $PYA0/topics-and-qrels/$QREL .
 sed -i $QREL -e 's/^A\.//g' -e 's/^NTCIR12-MathWiki-//g'
 
 if [[ $QREL =~ "arqmath" ]]; then
-    ### Official evaluation, but costly ###
-    #$PYA0/eval-arqmath2-task1/preprocess.sh ./fusion_output/*
-    #$PYA0/eval-arqmath2-task1/eval.sh $QREL
-
     for run in $(ls fusion_output); do
         ndcg=$(trec_eval $QREL fusion_output/$run -J -m ndcg | awk '{print $3}')
         map=$(trec_eval $QREL fusion_output/$run -l2 -J -m map | awk '{print $3}')
@@ -27,6 +24,11 @@ if [[ $QREL =~ "arqmath" ]]; then
         bpref=$(trec_eval $QREL fusion_output/$run -l2 -m bpref | awk '{print $3}')
         echo $run $ndcg $map $p10 $bpref
     done
+
+    ### Official evaluation, but costly ###
+    $PYA0/eval-arqmath2-task1/preprocess.sh cleanup
+    $PYA0/eval-arqmath2-task1/preprocess.sh ./fusion_output/*
+    $PYA0/eval-arqmath2-task1/eval.sh $QREL
 else
     for run in $(ls fusion_output); do
         bpref_full=$(trec_eval $QREL fusion_output/$run -l3 -m bpref | awk '{print $3}')
